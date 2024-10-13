@@ -79,17 +79,22 @@ public class GameUI : MonoBehaviour
 
     public void UpdateAbilityImage(Crate.Ability ability)
     {
-        abilityImage.gameObject.SetActive(true);
         switch (ability)
         {
             case Crate.Ability.Acceleration:
+                abilityImage.gameObject.SetActive(true);
                 abilityImage.sprite = accelerationSprite;
                 break;
             case Crate.Ability.Phantom:
+                abilityImage.gameObject.SetActive(true);
                 abilityImage.sprite = phantomSprite;
                 break;
             case Crate.Ability.Money:
+                abilityImage.gameObject.SetActive(true);
                 abilityImage.sprite = moneySprite;
+                break;
+            case Crate.Ability.None:
+                abilityImage.gameObject.SetActive(false);
                 break;
         }
     }

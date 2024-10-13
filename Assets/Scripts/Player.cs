@@ -102,14 +102,7 @@ public class Player : NetworkBehaviour
                     break;
             }
             currentAbility = Crate.Ability.None;
-            TargetClearAbilityUI(); // Update the UI for the local player
         }
-    }
-
-    [TargetRpc]
-    private void TargetClearAbilityUI()
-    {
-        gameUI.ClearAbilityImage();
     }
 
     private void OnTriggerEnter(Collider other)
@@ -250,18 +243,23 @@ public class Player : NetworkBehaviour
     void OnAbilityChanged(Crate.Ability oldAbility, Crate.Ability newAbility)
     {
         Debug.Log($"Ability changed from {oldAbility} to {newAbility}");
-
-        // Update any client-side UI or effects based on the new ability
-        RpcUpdateAbilityUI(newAbility);
+        // Ensure that the ability update is sent to the correct player
+        if (isServer)
+        {
+            // If the current player is the server, call TargetUpdateAbilityUI
+            TargetUpdateAbilityUI(currentAbility);
+        }
+        else if (isLocalPlayer)
+        {
+            // If this is the local player, also update their UI
+            gameUI.UpdateAbilityImage(newAbility);
+        }
     }
 
-    [ClientRpc]
-    private void RpcUpdateAbilityUI(Crate.Ability ability)
+    [TargetRpc]
+    private void TargetUpdateAbilityUI(Crate.Ability ability)
     {
-        if (isLocalPlayer)
-        {
-            gameUI.UpdateAbilityImage(ability);
-        }
+        gameUI.UpdateAbilityImage(ability);
     }
 
     private void OnCurrentShopChanged(PizzaShop oldShop, PizzaShop newShop)
