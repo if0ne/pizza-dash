@@ -125,17 +125,17 @@ PrefabInstance:
     - target: {fileID: -8679921383154817045, guid: 3b4e857368f6148738bb42e208a114ca,
         type: 3}
       propertyPath: m_LocalPosition.x
-      value: 0
+      value: -1.9
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 3b4e857368f6148738bb42e208a114ca,
         type: 3}
       propertyPath: m_LocalPosition.y
-      value: 0
+      value: 0.16
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 3b4e857368f6148738bb42e208a114ca,
         type: 3}
       propertyPath: m_LocalPosition.z
-      value: 23.83
+      value: 20.66
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 3b4e857368f6148738bb42e208a114ca,
         type: 3}
@@ -277,6 +277,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: cdd4b78a7ea2feb4b822c7f6f71c0d63, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  syncDirection: 0
+  syncMode: 0
+  syncInterval: 0
   money: 0
   spawnPoint: {fileID: 9150691428559118547}
   triggerRenderer: {fileID: 1807385977041860342}

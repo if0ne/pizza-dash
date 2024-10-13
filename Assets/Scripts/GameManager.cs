@@ -1,20 +1,22 @@
-using UnityEngine;
+using Mirror;
 using System.Collections;
 using System.Collections.Generic;
+using UnityEngine;
 
-public class GameManager : MonoBehaviour
+public class GameManager : NetworkBehaviour
 {
     public static GameManager Instance;
     public GameObject[] houses;
     public PizzaShop[] pizzaShops;
-    private int currentRound = 0;
-    public int maxRounds = 10; // Maximum number of rounds
-    public float roundStartDelay = 3f; // Customizable delay for starting a new round
-    public float gameStart = 5.0f;
 
-    public List<Player> players = new List<Player>(); // List of players
-    public GameObject playerPrefab;
-    public Joystick joystick; // Reference to the joystick
+    [SyncVar]
+    private int currentRound = 0;
+
+    public int maxRounds = 10;
+    public float roundStartDelay = 3f;
+    public float gameStartDelay = 5.0f;
+
+    public List<Player> players = new List<Player>();
 
     public delegate void RoundUpdateHandler(int currentRound, int maxRounds);
     public event RoundUpdateHandler OnRoundUpdate;
@@ -27,39 +29,44 @@ public class GameManager : MonoBehaviour
         Instance = this;
     }
 
-    private void Start()
+    // This method will be called by NetworkManagerPizza to initialize the game
+    [Server]
+    public void InitializeGame(List<NetworkConnectionToClient> connections)
     {
-        SpawnPlayers();
+        pizzaShops = FindObjectsOfType<PizzaShop>();
+        SpawnPlayers(connections);
+        RpcInitializeGameUI();
+        RpcUpdateUI(currentRound, maxRounds); // Notify all clients about the new round
         StartCoroutine(StartGame());
-        SubscribeToPizzaShopEvents();
-        UpdateUI();
     }
 
-    private void SpawnPlayers()
+    [Server]
+    private void SpawnPlayers(List<NetworkConnectionToClient> connections)
     {
-        for (int i = 0; i < pizzaShops.Length; i++)
+        // Spawn players for all connected clients
+        for (int i = 0; i < connections.Count; i++)
         {
-            // Use the spawn point from the corresponding pizzeria
-            Transform spawnPoint = pizzaShops[i].spawnPoint;
-            GameObject playerObject = Instantiate(playerPrefab, spawnPoint.position, Quaternion.identity);
-            Player player = playerObject.GetComponent<Player>();
-            player.currentShop = pizzaShops[i];
-            players.Add(player);
+            var conn = connections[i];
 
-            // Assign the joystick to the CarController script
-            CarController carController = playerObject.GetComponent<CarController>();
-            carController.joystick = joystick;
-            Camera.main.GetComponent<CameraFollow>().player = player.transform;
+            // Manually instantiate the player prefab for each connection
+            GameObject playerObj = Instantiate(NetworkManagerPizza.Instance.playerPrefab, pizzaShops[i].spawnPoint.position, Quaternion.identity);
+            NetworkServer.Spawn(playerObj, conn);
+            NetworkServer.AddPlayerForConnection(conn, playerObj);
 
+            // Get the Player component and store it
+            Player player = playerObj.GetComponent<Player>();
+            player.RpcInitialize(pizzaShops[i]);
             player.playerId = i;
+            players.Add(player);  // Add the player to the list of players
 
             Debug.Log("Player spawned with ID: " + player.playerId);
         }
+
     }
 
     private IEnumerator StartGame()
     {
-        yield return new WaitForSeconds(gameStart);
+        yield return new WaitForSeconds(gameStartDelay);
         StartNewRound();
     }
 
@@ -72,7 +79,7 @@ public class GameManager : MonoBehaviour
             {
                 AssignHouseToPlayer(player);
             }
-            UpdateUI();
+            RpcUpdateUI(currentRound, maxRounds); // Notify all clients about the new round
         }
         else
         {
@@ -80,20 +87,22 @@ public class GameManager : MonoBehaviour
         }
     }
 
+    [Server]
     void AssignHouseToPlayer(Player player)
     {
         House house = houses[Random.Range(0, houses.Length)].GetComponent<House>();
         house.isOrderActive = true;
-        player.SetTarget(house);
+        player.RpcSetTarget(house);
         house.ActivateOrder(player.currentShop);
     }
 
+    [Server]
     public void PlayerDeliveredPizza(Player player)
     {
         player.currentHouse.DeactivateOrder();
-        player.SetTarget(null);
+        player.currentHouse = null;  // Clear the current house on the server
+        player.RpcSetTarget(null);
 
-        // Check if all players have delivered their pizzas
         bool allDelivered = true;
         foreach (Player p in players)
         {
@@ -110,12 +119,14 @@ public class GameManager : MonoBehaviour
         }
     }
 
+    [Server]
     private IEnumerator DelayedStartNewRound()
     {
         yield return new WaitForSeconds(roundStartDelay);
         StartNewRound();
     }
 
+    [Server]
     void DetermineWinningPizzeria()
     {
         PizzaShop winningShop = null;
@@ -140,22 +151,22 @@ public class GameManager : MonoBehaviour
         }
     }
 
-    private void SubscribeToPizzaShopEvents()
-    {
-        foreach (PizzaShop shop in pizzaShops)
-        {
-            shop.OnMoneyUpdate += HandleMoneyUpdate;
-        }
-    }
-
-    private void HandleMoneyUpdate(float newMoney)
-    {
-        UpdateUI();
-    }
-
-    private void UpdateUI()
+    // ClientRpc to update UI for all players when a new round starts
+    [ClientRpc]
+    private void RpcUpdateUI(int currentRound, int maxRounds)
     {
         OnRoundUpdate?.Invoke(currentRound, maxRounds);
         OnPizzaShopUpdate?.Invoke(pizzaShops);
+    }
+
+    [ClientRpc]
+    private void RpcInitializeGameUI()
+    {
+        // Initialize the game UI for all clients
+        GameUI localGameUI = FindObjectOfType<GameUI>();
+        if (localGameUI != null)
+        {
+            localGameUI.SubscribeToGameEvents();
+        }
     }
 }

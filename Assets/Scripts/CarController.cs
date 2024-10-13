@@ -1,7 +1,8 @@
+using Mirror;
 using System.Collections;
 using UnityEngine;
 
-public class CarController : MonoBehaviour
+public class CarController : NetworkBehaviour
 {
     public Joystick joystick; // Reference to the joystick
 
@@ -18,6 +19,16 @@ public class CarController : MonoBehaviour
     public float originalMaxSpeed; // Store original max speed
     public float originalAcceleration; // Store original acceleration
 
+    // Ensure that only the local player controls their car
+    public override void OnStartLocalPlayer()
+    {
+        // Assign the joystick only for the local player
+        joystick = FindObjectOfType<Joystick>();
+
+        // Disable the camera for non-local players (optional, if you're using individual cameras)
+        Camera.main.GetComponent<CameraFollow>().player = transform;
+    }
+
     void Start()
     {
         rb = GetComponent<Rigidbody>();
@@ -27,6 +38,8 @@ public class CarController : MonoBehaviour
 
     void FixedUpdate()
     {
+        if (!isLocalPlayer) return; // Only allow local player to control the car
+
         float moveVertical = joystick.Vertical;
         float moveHorizontal = joystick.Horizontal;
 

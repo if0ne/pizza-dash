@@ -1,7 +1,8 @@
+using Mirror;
 using System.Collections;
 using UnityEngine;
 
-public class CrateManager : MonoBehaviour
+public class CrateManager : NetworkBehaviour
 {
     public static CrateManager Instance;
 
@@ -17,6 +18,7 @@ public class CrateManager : MonoBehaviour
         }
     }
 
+    [Server]
     public void RespawnCrate(Crate crate)
     {
         StartCoroutine(RespawnCrateCoroutine(crate));
@@ -26,7 +28,6 @@ public class CrateManager : MonoBehaviour
     {
         yield return new WaitForSeconds(5);
         crate.AssignRandomAbility();
-        crate.transform.position = crate.spawnPosition;
-        crate.gameObject.SetActive(true);
+        crate.Respawn(); // Ensure the crate gets reactivated on the server and clients
     }
 }

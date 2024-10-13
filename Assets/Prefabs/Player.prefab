@@ -332,6 +332,10 @@ PrefabInstance:
         type: 3}
       insertIndex: -1
       addedObject: {fileID: 8650048646248713147}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 2a72fabd85ec347019ee1968eb503667,
+        type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 2277019653085649250}
   m_SourcePrefab: {fileID: 100100000, guid: 2a72fabd85ec347019ee1968eb503667, type: 3}
 --- !u!4 &6335852953919298090 stripped
 Transform:
@@ -384,6 +388,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b7bafa37b39f477458a83e6612d7cb2f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  syncDirection: 0
+  syncMode: 0
+  syncInterval: 0
   joystick: {fileID: 0}
   maxSpeed: 15
   acceleration: 10
@@ -404,6 +411,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6717596ec4192d5499264a7dd875ff31, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  syncDirection: 0
+  syncMode: 0
+  syncInterval: 0
   playerId: 0
   hasPizza: 0
   currentShop: {fileID: 0}
@@ -452,3 +462,36 @@ MonoBehaviour:
   serverOnly: 0
   visibility: 0
   hasSpawned: 0
+--- !u!114 &2277019653085649250
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6676208343381983376}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: cb803efbe62c34d7baece46c9ffebad9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  syncDirection: 1
+  syncMode: 0
+  syncInterval: 0
+  target: {fileID: 6335852953919298090}
+  syncPosition: 1
+  syncRotation: 1
+  syncScale: 0
+  onlySyncOnChange: 1
+  compressRotation: 1
+  interpolatePosition: 1
+  interpolateRotation: 1
+  interpolateScale: 1
+  coordinateSpace: 0
+  timelineOffset: 1
+  showGizmos: 0
+  showOverlay: 0
+  overlayColor: {r: 0, g: 0, b: 0, a: 0.5}
+  onlySyncOnChangeCorrectionMultiplier: 2
+  rotationSensitivity: 0.01
+  positionPrecision: 0.01
+  scalePrecision: 0.01

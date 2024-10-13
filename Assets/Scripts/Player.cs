@@ -1,12 +1,18 @@
+using Mirror;
 using System.Collections;
 using UnityEngine;
 
-public class Player : MonoBehaviour
+public class Player : NetworkBehaviour
 {
     public int playerId;
+
+    [SyncVar]
     public bool hasPizza = false;
 
+    [SyncVar(hook = nameof(OnCurrentShopChanged))]
     public PizzaShop currentShop; // The shop the player got the pizza from
+
+    [SyncVar]
     public House currentHouse; // The house to deliver the pizza to
 
     [SerializeField]
@@ -15,8 +21,10 @@ public class Player : MonoBehaviour
     public ArrowHint arrow;
 
     // Fields for abilities and coroutines
-    public Crate.Ability? currentAbility;
-    private GameUI gameUI;
+    [SyncVar(hook = nameof(OnAbilityChanged))]
+    public Crate.Ability currentAbility;
+
+    public GameUI gameUI;
 
     private Coroutine phantomCoroutine;
     private Coroutine accelerationCoroutine;
@@ -34,14 +42,24 @@ public class Player : MonoBehaviour
         carController = GetComponent<CarController>();
     }
 
-    private void Start()
+    [ClientRpc]
+    public void RpcInitialize(PizzaShop pizzaShop)
     {
-        gameUI = FindObjectOfType<GameUI>();
+        currentShop = pizzaShop;
+        if (isLocalPlayer)
+        {
+            gameUI = FindObjectOfType<GameUI>();
+            gameUI.localPlayer = this;
+            pizzaShop.SetTriggerVisualState(true);
+        }
     }
 
     private void Update()
     {
-        DetectDoubleClick();
+        if (isLocalPlayer)
+        {
+            DetectDoubleClick();
+        }
     }
 
     private void DetectDoubleClick()
@@ -50,46 +68,123 @@ public class Player : MonoBehaviour
         {
             if (Time.time - lastClickTime < doubleClickTime)
             {
-                UseCurrentAbility();
+                CmdUseCurrentAbility();
             }
             lastClickTime = Time.time;
         }
     }
 
-    private void UseCurrentAbility()
+    [Command] // Client tells the server to use an ability
+    private void CmdUseCurrentAbility()
     {
-        if (currentAbility.HasValue)
+        if (currentAbility != Crate.Ability.None)
         {
-            switch (currentAbility.Value)
+            switch (currentAbility)
             {
                 case Crate.Ability.Phantom:
-                    StartPhantomAbility(3.0f); // Example duration
+                    if (phantomCoroutine != null)
+                    {
+                        StopCoroutine(phantomCoroutine);
+                    }
+                    phantomCoroutine = StartCoroutine(PhantomAbilityCoroutine(3.0f)); // Server logic
+                    TargetStartPhantomAbility(connectionToClient, 3.0f); // Notify the client
                     break;
                 case Crate.Ability.Acceleration:
-                    StartAccelerationAbility(3.0f); // Example duration
+                    if (accelerationCoroutine != null)
+                    {
+                        StopCoroutine(accelerationCoroutine);
+                    }
+                    accelerationCoroutine = StartCoroutine(AccelerationAbilityCoroutine(3.0f)); // Server logic
+                    TargetStartAccelerationAbility(connectionToClient, 3.0f); // Notify the client
                     break;
                 case Crate.Ability.Money:
-                    StartMoneyAbility();
+                    currentShop.AddPoints(3.0f); // Give money to the player’s shop
                     break;
             }
-            currentAbility = null;
-            gameUI.ClearAbilityImage();
+            currentAbility = Crate.Ability.None;
+            TargetClearAbilityUI(); // Update the UI for the local player
         }
+    }
+
+    [TargetRpc]
+    private void TargetClearAbilityUI()
+    {
+        gameUI.ClearAbilityImage();
     }
 
     private void OnTriggerEnter(Collider other)
     {
-        if (other.CompareTag("House") && hasPizza && currentHouse == other.GetComponentInParent<House>())
+        if (!isLocalPlayer) return;
+
+        if (other.CompareTag("House") && hasPizza)
         {
-            RemovePizza();
+            House house = other.GetComponentInParent<House>();
 
-            float deliveryTime = Time.time - currentHouse.deliveryStartTime;
-            Debug.Log(deliveryTime);
-            float points = deliveryTime <= 15f ? 15.0f - deliveryTime : 0;
-            AddPoints(points);
+            if (house != null && house == currentHouse)
+            {
+                // Send a command to the server to handle pizza delivery
+                CmdHandlePizzaDelivery();
+            }
+        }
+    }
 
-            GameManager.Instance.PlayerDeliveredPizza(this);
-            return;
+    [Command] // This command is sent from the client to the server
+    private void CmdHandlePizzaDelivery()
+    {
+        if (currentHouse != null && hasPizza)
+        {
+            // Server-side pizza delivery logic
+            RpcRemovePizza();  // Notify clients to update their UI
+            ServerHandlePizzaDelivery();  // Process the delivery on the server
+        }
+    }
+
+    [ClientRpc] // Server handles pizza delivery
+    private void RpcRemovePizza()
+    {
+        if (isLocalPlayer)
+        {
+            currentShop.SetTriggerVisualState(true);
+        }
+
+        hasPizza = false;
+        UpdatePizzaSocket(false); // Update pizza socket for all clients
+    }
+
+    // New server-side method to handle pizza delivery
+    [Server]
+    private void ServerHandlePizzaDelivery()
+    {
+        float deliveryTime = Time.time - currentHouse.deliveryStartTime;
+        float points = deliveryTime <= 15f ? 15.0f - deliveryTime : 0;
+        currentShop.AddPoints(points);
+
+        GameManager.Instance.PlayerDeliveredPizza(this); // Server directly calls the GameManager's command
+    }
+
+    private void UpdatePizzaSocket(bool state)
+    {
+        pizzaSocket.SetActive(state);
+    }
+
+    [ClientRpc]
+    public void RpcAddPizza()
+    {
+        hasPizza = true;
+        UpdatePizzaSocket(true);
+
+        if (isLocalPlayer)
+            currentShop.SetTriggerVisualState(false);
+    }
+
+    [ClientRpc]
+    public void RpcSetTarget(House target)
+    {
+        currentHouse = target;
+        if (isLocalPlayer)
+        {
+            arrow.SetTarget(target?.transform);
+            arrow.gameObject.SetActive(target != null); // Activate or deactivate based on target
         }
     }
 
@@ -100,47 +195,6 @@ public class Player : MonoBehaviour
         return hitColliders.Length > 0;
     }
 
-    public void AddPizza() {
-        hasPizza = true;
-        pizzaSocket.SetActive(true);
-        currentShop.SetTriggerVisualState(false); // Hide the trigger visual
-    }
-
-    private void RemovePizza()
-    {
-        hasPizza = false;
-        pizzaSocket.SetActive(false);
-        currentShop.SetTriggerVisualState(true); // Show the trigger visual
-    }
-
-    public void AddPoints(float pointsToAdd)
-    {
-        currentShop.AddPoints(pointsToAdd);
-    }
-
-    public void SetTarget(House target)
-    {
-        currentHouse = target;
-        arrow.SetTarget(target?.transform);
-        arrow.gameObject.SetActive(target != null); // Activate or deactivate based on target
-    }
-
-    public void StartMoneyAbility()
-    {
-        currentShop.AddPoints(3.0f);
-    }
-
-    // Method to start the phantom ability
-    public void StartPhantomAbility(float duration)
-    {
-        if (phantomCoroutine != null)
-        {
-            StopCoroutine(phantomCoroutine);
-        }
-        phantomCoroutine = StartCoroutine(PhantomAbilityCoroutine(duration));
-    }
-
-    // Coroutine for the phantom ability
     private IEnumerator PhantomAbilityCoroutine(float duration)
     {
         carController.gameObject.layer = LayerMask.NameToLayer("Phantom");
@@ -152,38 +206,70 @@ public class Player : MonoBehaviour
             yield return null;
         }
 
-        carController.gameObject.layer = 0;
+        carController.gameObject.layer = 0; // Set back to default
     }
 
-    // Method to start the acceleration ability
-    public void StartAccelerationAbility(float duration)
+    [TargetRpc]
+    private void TargetStartPhantomAbility(NetworkConnection target, float duration)
+    {
+        if (phantomCoroutine != null)
+        {
+            StopCoroutine(phantomCoroutine);
+        }
+        phantomCoroutine = StartCoroutine(PhantomAbilityCoroutine(duration)); // Run on the client
+    }
+
+    private IEnumerator AccelerationAbilityCoroutine(float duration)
+    {
+        carController.maxSpeed *= 1.35f; // Increase speed
+        carController.acceleration *= 1.35f; // Increase acceleration
+
+        yield return new WaitForSeconds(duration);
+
+        carController.maxSpeed = carController.originalMaxSpeed; // Restore speed
+        carController.acceleration = carController.originalAcceleration; // Restore acceleration
+    }
+
+    [TargetRpc]
+    private void TargetStartAccelerationAbility(NetworkConnection target, float duration)
     {
         if (accelerationCoroutine != null)
         {
             StopCoroutine(accelerationCoroutine);
-            carController.maxSpeed = carController.originalMaxSpeed; // Restore original max speed
-            carController.acceleration = carController.originalAcceleration; // Restore original acceleration
         }
-        accelerationCoroutine = StartCoroutine(AccelerationAbilityCoroutine(duration));
+        accelerationCoroutine = StartCoroutine(AccelerationAbilityCoroutine(duration)); // Run on the client
     }
 
-    // Coroutine for the acceleration ability
-    private IEnumerator AccelerationAbilityCoroutine(float duration)
+    [ClientRpc]
+    public void RpcPickUpAbility(Crate.Ability ability)
     {
-        carController.maxSpeed *= 1.35f; // Double the max speed
-        carController.acceleration *= 1.35f; // Double the acceleration
-
-        yield return new WaitForSeconds(duration);
-
-        carController.maxSpeed = carController.originalMaxSpeed; // Restore original max speed
-        carController.acceleration = carController.originalAcceleration; // Restore original acceleration
-
-        accelerationCoroutine = null;
-    }
-
-    public void PickUpAbility(Crate.Ability ability)
-    {
+        Debug.Log("Picked up ability: " + ability);
         currentAbility = ability;
-        gameUI.UpdateAbilityImage(ability);
+    }
+
+    void OnAbilityChanged(Crate.Ability oldAbility, Crate.Ability newAbility)
+    {
+        Debug.Log($"Ability changed from {oldAbility} to {newAbility}");
+
+        // Update any client-side UI or effects based on the new ability
+        RpcUpdateAbilityUI(newAbility);
+    }
+
+    [ClientRpc]
+    private void RpcUpdateAbilityUI(Crate.Ability ability)
+    {
+        if (isLocalPlayer)
+        {
+            gameUI.UpdateAbilityImage(ability);
+        }
+    }
+
+    private void OnCurrentShopChanged(PizzaShop oldShop, PizzaShop newShop)
+    {
+        if (isLocalPlayer && newShop != null)
+        {
+            Debug.Log("Set new shop");
+            newShop.SetTriggerVisualState(true);
+        }
     }
 }
