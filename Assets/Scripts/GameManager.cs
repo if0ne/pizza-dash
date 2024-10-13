@@ -90,10 +90,37 @@ public class GameManager : NetworkBehaviour
     [Server]
     void AssignHouseToPlayer(Player player)
     {
-        House house = houses[Random.Range(0, houses.Length)].GetComponent<House>();
-        house.isOrderActive = true;
-        player.RpcSetTarget(house);
-        house.ActivateOrder(player.currentShop);
+        House selectedHouse = null;
+        int maxAttempts = 10; // Maximum attempts to find a valid house
+        int attempts = 0;
+
+        while (attempts < maxAttempts)
+        {
+            // Randomly select a house
+            House house = houses[Random.Range(0, houses.Length)].GetComponent<House>();
+
+            // Check if the house's linkedShop is not null
+            if (house.linkedShop == null)
+            {
+                selectedHouse = house;
+                break; // Exit the loop if we found a valid house
+            }
+
+            attempts++; // Increment the attempt counter
+        }
+
+        if (selectedHouse != null)
+        {
+            // If we found a valid house, activate the order
+            selectedHouse.isOrderActive = true;
+            player.RpcSetTarget(selectedHouse);
+            selectedHouse.ActivateOrder(player.currentShop);
+        }
+        else
+        {
+            Debug.LogWarning("No available house found for the player after max attempts.");
+            // Handle the case where no valid house is found (optional)
+        }
     }
 
     [Server]
