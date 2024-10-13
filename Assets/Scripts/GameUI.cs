@@ -35,6 +35,7 @@ public class GameUI : MonoBehaviour
         initialPanel.SetActive(true);
         waitingPanel.SetActive(false);
         gamePanel.SetActive(false);
+        finalResultPanel.SetActive(false);
     }
 
     // Call this from GameManager.InitializeGame to subscribe to events
@@ -73,6 +74,18 @@ public class GameUI : MonoBehaviour
         {
             var shop = pizzaShops[i];
             var infoText = pizzaShopInfos[i].GetComponentInChildren<TMP_Text>();
+            infoText.text = $"{shop.gameObject.name}: {shop.money:n2} $";
+        }
+    }
+
+    public void UpdatePizzaShopInfo(PizzaShop shop)
+    {
+        // Find the corresponding UI element for the shop and update its info
+        int index = GameManager.Instance.GetPizzaShopIndex(shop);
+
+        if (index >= 0 && index < pizzaShopInfos.Count)
+        {
+            var infoText = pizzaShopInfos[index].GetComponentInChildren<TMP_Text>();
             infoText.text = $"{shop.gameObject.name}: {shop.money:n2} $";
         }
     }

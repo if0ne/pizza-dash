@@ -56,6 +56,7 @@ public class GameManager : NetworkBehaviour
             // Get the Player component and store it
             Player player = playerObj.GetComponent<Player>();
             player.RpcInitialize(pizzaShops[i]);
+            pizzaShops[i].OnMoneyUpdate += MoneyHandler;
             player.playerId = i;
             players.Add(player);  // Add the player to the list of players
 
@@ -208,5 +209,25 @@ public class GameManager : NetworkBehaviour
         {
             localGameUI.SubscribeToGameEvents();
         }
+    }
+
+    [Server]
+    public void MoneyHandler(float money)
+    {
+        RpcUpdateUI(currentRound, maxRounds);
+    }
+
+    public int GetPizzaShopIndex(PizzaShop shop)
+    {
+        for (int i = 0; i < pizzaShops.Length; i++)
+        {
+            if (pizzaShops[i] == shop)
+            {
+                return i; // Return the index if a match is found
+            }
+        }
+
+        // If no match is found, return -1 to indicate the shop was not found
+        return -1;
     }
 }

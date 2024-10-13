@@ -43,5 +43,11 @@ public class PizzaShop : NetworkBehaviour
     private void OnMoneyUpdated(float oldMoney, float newMoney)
     {
         OnMoneyUpdate?.Invoke(newMoney); // Notify any listeners about the money update
+        UpdatePizzaShopUI();
+    }
+
+    private void UpdatePizzaShopUI()
+    {
+        FindObjectOfType<GameUI>().UpdatePizzaShopInfo(this);
     }
 }
