@@ -141,6 +141,9 @@ public class GameManager : NetworkBehaviour
             }
         }
 
+        // Notify all players about the game result using a ClientRpc
+        RpcShowFinalResults(winningShop);
+
         if (winningShop != null)
         {
             Debug.Log("The winning pizzeria is " + winningShop.gameObject.name + " with " + highestMoney + " money!");
@@ -148,6 +151,16 @@ public class GameManager : NetworkBehaviour
         else
         {
             Debug.Log("No winning pizzeria!");
+        }
+    }
+
+    [ClientRpc]
+    private void RpcShowFinalResults(PizzaShop winningShop)
+    {
+        foreach (Player player in FindObjectsOfType<Player>()) // Get all players
+        {
+            bool didWin = (player.currentShop == winningShop); // Determine if this player won
+            player.ShowFinalResult(didWin); // Call the method on each player's instance
         }
     }
 

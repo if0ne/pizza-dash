@@ -28,7 +28,6 @@ public class PizzaShop : NetworkBehaviour
     {
         money += pointsToAdd;
         Debug.Log(gameObject.name + " Money: " + money);
-        OnMoneyUpdate?.Invoke(money);
     }
 
 

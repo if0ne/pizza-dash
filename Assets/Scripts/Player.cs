@@ -272,4 +272,12 @@ public class Player : NetworkBehaviour
             newShop.SetTriggerVisualState(true);
         }
     }
+
+    public void ShowFinalResult(bool didWin)
+    {
+        if (isLocalPlayer)
+        {
+            gameUI.ShowFinalResult(didWin);
+        }
+    }
 }

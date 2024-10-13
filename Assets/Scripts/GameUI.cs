@@ -24,6 +24,8 @@ public class GameUI : MonoBehaviour
     public GameObject initialPanel; // Panel for initial host/connect buttons
     public GameObject waitingPanel; // Panel for waiting for a second player
     public GameObject gamePanel; // Main game panel
+    public GameObject finalResultPanel; // Panel for displaying the final result
+    public TMP_Text finalResultText; // Text element to show win/lose message
 
     private bool isSubscribed = false;
 
@@ -135,5 +137,12 @@ public class GameUI : MonoBehaviour
         // Hide waiting panel and show game panel
         waitingPanel.SetActive(false);
         gamePanel.SetActive(true);
+    }
+
+    // Call this to show the final result
+    public void ShowFinalResult(bool didWin)
+    {
+        finalResultPanel.SetActive(true);
+        finalResultText.text = didWin ? "You Win!" : "You Lose!";
     }
 }
