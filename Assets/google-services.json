@@ -1,0 +1,30 @@
+{
+  "project_info": {
+    "project_number": "505974182289",
+    "firebase_url": "https://pizzadash-2ad24-default-rtdb.firebaseio.com",
+    "project_id": "pizzadash-2ad24",
+    "storage_bucket": "pizzadash-2ad24.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:505974182289:android:6058f0331e529e27108a30",
+        "android_client_info": {
+          "package_name": "com.DefaultCompany.PizzaDash"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA6wLVqxVu69bQ3roIsXM7XLS0n4EFlMVw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

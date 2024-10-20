@@ -153,6 +153,7 @@ public class Player : NetworkBehaviour
         currentShop.AddPoints(points);
 
         GameManager.Instance.PlayerDeliveredPizza(this); // Server directly calls the GameManager's command
+        FirebaseInit.instance.MoneyEvent(points);
     }
 
     private void UpdatePizzaSocket(bool state)

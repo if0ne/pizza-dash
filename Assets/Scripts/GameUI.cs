@@ -163,4 +163,9 @@ public class GameUI : MonoBehaviour
         finalResultPanel.SetActive(true);
         finalResultText.text = didWin ? "You Win!" : "You Lose!";
     }
+
+    public void Crash()
+    {
+        throw new System.Exception("Test");
+    }
 }

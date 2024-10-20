@@ -1,5 +1,9 @@
 {
   "dependencies": {
+    "com.google.external-dependency-manager": "file:Firebase/com.google.external-dependency-manager-1.2.177.tgz",
+    "com.google.firebase.analytics": "file:Firebase/com.google.firebase.analytics-12.2.0.tgz",
+    "com.google.firebase.app": "file:Firebase/com.google.firebase.app-12.2.0.tgz",
+    "com.google.firebase.crashlytics": "file:Firebase/com.google.firebase.crashlytics-12.2.0.tgz",
     "com.unity.collab-proxy": "2.5.1",
     "com.unity.feature.mobile": "1.0.0",
     "com.unity.ide.rider": "3.0.31",
