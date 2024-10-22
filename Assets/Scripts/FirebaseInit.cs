@@ -22,7 +22,7 @@ public class FirebaseInit : MonoBehaviour
                 app = Firebase.FirebaseApp.DefaultInstance;
 
                 Crashlytics.ReportUncaughtExceptionsAsFatal = true;
-
+                FirebaseAnalytics.SetAnalyticsCollectionEnabled(true);
                 // Set a flag here to indicate whether Firebase is ready to use by your app.
                 instance = this;
                 Debug.Log("Firebase Init");
